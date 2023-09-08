@@ -1,4 +1,4 @@
-# This is a test build and a proof of concept of the Parappa Bot for Discord
+# This is a deployment build of the Parappa Bot for Discord
 # It utilizes SpaCy: a natural language processor for which its purpose for this program is to identify subjects & objects in a sentence.
 # More info on SpaCy here: https://spacy.io/
 import spacy
@@ -7,17 +7,29 @@ from spacy.matcher import Matcher
 
 # Standard SpaCy NLP & Matcher load in English model
 nlp = spacy.load("en_core_web_sm")
-matcher = Matcher(nlp.vocab)
+
+# Matchers
+contract = Matcher(nlp.vocab)   # Matcher for contractions e.g., "aren't" and "ain't"
+matcher = Matcher(nlp.vocab)        # Matcher for pronoun-verbs
 
 # Patterns for matching & retokenizing
-ImPattern = [{"LOWER" : "i"}, {"LOWER" : {"REGEX" : "[^a]'?m"}}]
-YourePattern = [{"LOWER" : "you"}, {"LOWER" : {"REGEX" : "[^a]'?re"}}]
+### contractions
+AintPattern = [{"LOWER" : "ai"}, {"LOWER" : {"IN" : ["n't", "nt"]}}]
+ArentPattern = [{"LOWER" : "are"}, {"LOWER" : {"IN" : ["n't", "nt"]}}]
+
+### pronoun-verbs (matcher)
+ImPattern = [{"LOWER" : "i"}, {"LOWER" : {"IN": ["'m", "m"]}}]
+YourePattern = [{"LOWER" : "you"}, {"LOWER" : {"IN": ["'re", "re"]}}]
 IAmPattern = [{"LOWER" : "i"}, {"LOWER" : "am"}]
 YouArePattern = [{"LOWER": "you"}, {"LOWER" : "are"}]
 IWasPattern = [{"LOWER" : "i"}, {"LOWER" : "was"}]
 YouWerePattern = [{"LOWER" : "you"}, {"LOWER" : "were"}]
-IWasntPattern = [{"LOWER" : "i"}, {"LOWER" : {"REGEX": "wasn'?t"}}]
-YouWerentPattern = [{"LOWER" : "you"}, {"LOWER" : "weren'?t"}]
+IAintPattern = [{"LOWER" : "i"}, {"LOWER" : {"REGEX" : "ain'?t"}}]
+YouArentPattern = [{"LOWER" : "you"}, {"LOWER" : {"REGEX" : "aren'?t"}}]
+
+# Adding to contractions
+contract.add("Aint", [AintPattern])
+contract.add("Arent", [ArentPattern])
 
 # Adding to matcher
 matcher.add("IAm", [ImPattern])
@@ -26,8 +38,8 @@ matcher.add("IAmToo", [IAmPattern])
 matcher.add("YouAreToo", [YouArePattern])
 matcher.add("IWas", [IWasPattern])
 matcher.add("YouWere", [YouWerePattern])
-matcher.add("IWasnt", [IWasntPattern])
-matcher.add("YouWerent", [YouWerentPattern])
+matcher.add("YouArent", [YouArentPattern])
+matcher.add("IAint", [IAintPattern])
 
 # For future development; iterate through tuple list and switch with each tuple. Break on success.
 '''
@@ -36,8 +48,6 @@ tupleList = [
     ("I'm", "you're"),
     ("Im", "youre"),
     ("I was", "you were"),
-    ("I wasn't", "you weren't"),
-    ("I wasnt", "you werent"),
     ("I", "you"),
     ("me", "you"),
     ("my", "your"),
@@ -49,11 +59,17 @@ def repeat(message):
     rap = nlp(message)  # SpaCy's NLP of user input
     parappa = ''        # Parappa's line
 
-    ''' Merged contractions using SpaCy's retokenize function
+    ''' Merged tokens using SpaCy's retokenize function
     Credit to Ines Motani https://stackoverflow.com/questions/56289487/is-there-a-way-to-turn-off-specific-built-in-tokenization-rules-in-spacy '''
-    matches = matcher(rap)
+    # Merged contractions
     with rap.retokenize() as retokenizer:
-        for match_id, match_start, match_end in matches:
+        for _, contrapt_start, contrapt_end in contract(rap):
+            span = rap[contrapt_start:contrapt_end]
+            retokenizer.merge(span)
+    
+    # Merged matcher
+    with rap.retokenize() as retokenizer:
+        for _, match_start, match_end in matcher(rap):
             span = rap[match_start:match_end]
             retokenizer.merge(span)
 
@@ -63,6 +79,10 @@ def repeat(message):
             parappa += ("You are" if tokens.is_sent_start else "you are") + tokens.whitespace_
         elif tokens.text.lower() == "you are":
             parappa += "I am" + tokens.whitespace_
+        elif tokens.text.lower() == "i ain't" or tokens.text.lower() == "i aint":
+            parappa += ("You aren't" if tokens.is_sent_start else "you aren't") + tokens.whitespace_
+        elif tokens.text.lower() == "you aren't" or tokens.text.lower() == "you arent":
+            parappa += "I ain't" + tokens.whitespace_
         elif tokens.text.lower() == "i'm" or tokens.text.lower() == "im":
             parappa += ("You're" if tokens.is_sent_start else "you're") + tokens.whitespace_
         elif tokens.text.lower() == "you're" or tokens.text.lower() == "youre":
@@ -71,10 +91,6 @@ def repeat(message):
             parappa += ("You were" if tokens.is_sent_start else "you were") + tokens.whitespace_
         elif tokens.text.lower() == "you were":
             parappa += "I was" + tokens.whitespace_
-        elif tokens.text.lower() == "i wasn't" or tokens.text.lower() == "i wasnt":
-            parappa += ("You weren't" if tokens.is_sent_start else "you weren't") + tokens.whitespace_
-        elif tokens.text.lower() == "you weren't" or tokens.text.lower() == "you werent":
-            parappa += "I wasn't" + tokens.whitespace_
         elif tokens.text.lower() == "i":
             parappa += ("You" if tokens.is_sent_start else "you") + tokens.whitespace_
         elif tokens.text.lower() == "me":
