@@ -16,8 +16,11 @@ matcher = Matcher(nlp.vocab)        # Matcher for pronoun-verbs
 ### contractions
 AintPattern = [{"LOWER" : "ai"}, {"LOWER" : {"IN" : ["n't", "nt"]}}]
 ArentPattern = [{"LOWER" : "are"}, {"LOWER" : {"IN" : ["n't", "nt"]}}]
+WasntPattern = [{"LOWER" : "was"}, {"LOWER" : {"IN" : ["n't", "nt"]}}]
+WerentPattern = [{"LOWER" : "were"}, {"LOWER" : {"IN" : ["n't", "nt"]}}]
 
 ### pronoun-verbs (matcher)
+##### Declarative
 ImPattern = [{"LOWER" : "i"}, {"LOWER" : {"IN": ["'m", "m"]}}]
 YourePattern = [{"LOWER" : "you"}, {"LOWER" : {"IN": ["'re", "re"]}}]
 IAmPattern = [{"LOWER" : "i"}, {"LOWER" : "am"}]
@@ -27,11 +30,24 @@ YouWerePattern = [{"LOWER" : "you"}, {"LOWER" : "were"}]
 IAintPattern = [{"LOWER" : "i"}, {"LOWER" : {"REGEX" : "ain'?t"}}]
 YouArentPattern = [{"LOWER" : "you"}, {"LOWER" : {"REGEX" : "aren'?t"}}]
 
+##### Interrogative
+AmIPattern = [{"LOWER" : "am"},  {"LOWER" : "i"}]
+AreYouPattern = [{"LOWER" : "are"},  {"LOWER" : "you"}]
+WasIPattern = [{"LOWER" : "was"},  {"LOWER" : "i"}]
+WereYouPattern = [{"LOWER" : "were"},  {"LOWER" : "you"}]
+AintIPattern = [{"LOWER" : {"REGEX" : "ain'?t"}}, {"LOWER" : "i"}]
+ArentYouPattern = [{"LOWER" : {"REGEX" : "aren'?t"}}, {"LOWER" : "you"}]
+WasntIPattern = [{"LOWER" : {"REGEX" : "wasn'?t"}}, {"LOWER" : "i"}]
+WerentYouPattern = [{"LOWER" : {"REGEX" : "weren'?t"}}, {"LOWER" : "you"}]
+
 # Adding to contractions
 contract.add("Aint", [AintPattern])
 contract.add("Arent", [ArentPattern])
+contract.add("Wasnt", [WasntPattern])
+contract.add("Werent", [WerentPattern])
 
 # Adding to matcher
+### Declarative
 matcher.add("IAm", [ImPattern])
 matcher.add("YouAre", [YourePattern])
 matcher.add("IAmToo", [IAmPattern])
@@ -40,6 +56,16 @@ matcher.add("IWas", [IWasPattern])
 matcher.add("YouWere", [YouWerePattern])
 matcher.add("YouArent", [YouArentPattern])
 matcher.add("IAint", [IAintPattern])
+
+### Interrogative
+matcher.add("AmI", [AmIPattern])
+matcher.add("AreYou", [AreYouPattern])
+matcher.add("WasI", [WasIPattern])
+matcher.add("WereYou", [WereYouPattern])
+matcher.add("AintI", [AintIPattern])
+matcher.add("ArentYou", [ArentYouPattern])
+matcher.add("WasntI", [WasntIPattern])
+matcher.add("WerentYou", [WerentYouPattern])
 
 # For future development; iterate through tuple list and switch with each tuple. Break on success.
 '''
@@ -75,6 +101,7 @@ def repeat(message):
 
     # Add to "parappa" string depending on token
     for tokens in rap:
+        # Declarative matchers
         if tokens.text.lower() == "i am":
             parappa += ("You are" if tokens.is_sent_start else "you are") + tokens.whitespace_
         elif tokens.text.lower() == "you are":
@@ -91,13 +118,31 @@ def repeat(message):
             parappa += ("You were" if tokens.is_sent_start else "you were") + tokens.whitespace_
         elif tokens.text.lower() == "you were":
             parappa += "I was" + tokens.whitespace_
+        # Interrogative matchers
+        elif tokens.text.lower() == "am i":
+            parappa += ("Are you" if tokens.is_sent_start else "are you") + tokens.whitespace_
+        elif tokens.text.lower() == "are you":
+            parappa += ("Am I" if tokens.is_sent_start else "am I") + tokens.whitespace_
+        elif tokens.text.lower() == "was i":
+            parappa += ("Were you" if tokens.is_sent_start else "were you") + tokens.whitespace_
+        elif tokens.text.lower() == "were you":
+            parappa += ("Was I" if tokens.is_sent_start else "was I") + tokens.whitespace_
+        elif tokens.text.lower() == "ain't i" or tokens.text.lower() == "aint i":
+            parappa += ("Aren't you" if tokens.is_sent_start else "aren't you") + tokens.whitespace_
+        elif tokens.text.lower() == "aren't you" or tokens.text.lower() == "arent you":
+            parappa += ("Ain't I" if tokens.is_sent_start else "ain't I") + tokens.whitespace_
+        elif tokens.text.lower() == "wasn't i" or tokens.text.lower() == "wasnt i":
+            parappa += ("Weren't you" if tokens.is_sent_start else "weren't you") + tokens.whitespace_
+        elif tokens.text.lower() == "weren't you" or tokens.text.lower() == "werent you":
+            parappa += ("Wasn't I" if tokens.is_sent_start else "wasn't I") + tokens.whitespace_
+        # Individual matchers
         elif tokens.text.lower() == "i":
             parappa += ("You" if tokens.is_sent_start else "you") + tokens.whitespace_
         elif tokens.text.lower() == "me":
             parappa += ("You" if tokens.is_sent_start else "you") + tokens.whitespace_
-        elif tokens.text.lower() == "you" and tokens.dep_ == "nsubj":
+        elif tokens.text.lower() == "you" and tokens.dep_ == "nsubj":   # You is the SUBJECT of the sentence
             parappa += "I" + tokens.whitespace_
-        elif tokens.text.lower() == "you" and tokens.dep_ != "nsubj":
+        elif tokens.text.lower() == "you" and tokens.dep_ != "nsubj":   # You is NOT the SUBJECT of the sentence
             parappa += ("Me" if tokens.is_sent_start else "me") + tokens.whitespace_
         elif tokens.text.lower() == "my":
             parappa += ("Your" if tokens.is_sent_start else "your") + tokens.whitespace_
@@ -112,3 +157,5 @@ def repeat(message):
             
     # print (parappa) # DEBUG: Print parappa's message in the terminal
     return parappa
+
+#
