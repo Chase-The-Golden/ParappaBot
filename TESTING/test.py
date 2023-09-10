@@ -36,6 +36,18 @@ matcher.add("YouAreToo", [YouAre2Pattern])
 matcher.add("IAint", [IAintPattern])
 matcher.add("YouAreThree", [YouAre3Pattern])
 
+tupleList = [
+    ("I am", "you are"),
+    ("I ain't", "you aren't"),
+    ("I aint", "you arent"),
+    ("I'm", "you're"),
+    ("Im", "youre"),
+    ("I", "you"),
+    ("me", "you"),
+    ("my", "your"),
+    ("mine", "yours")
+]
+
 # Infinite loop
 isLoop = True
 while isLoop == True:
@@ -59,38 +71,52 @@ while isLoop == True:
 
     # Add to "parappa" string depending on token
     for tokens in rap:
-        if tokens.text.lower() == "i am":
-            parappa += ("You are" if tokens.is_sent_start else "you are") + tokens.whitespace_
-        elif tokens.text.lower() == "you are":
-            parappa += "I am" + tokens.whitespace_
-        elif tokens.text.lower() == "i ain't" or tokens.text.lower() == "i aint":
-            parappa += ("You aren't" if tokens.is_sent_start else "you aren't") + tokens.whitespace_
-        elif tokens.text.lower() == "you aren't" or tokens.text.lower() == "you arent":
-            parappa += "I ain't" + tokens.whitespace_
-        elif tokens.text.lower() == "i'm" or tokens.text.lower() == "im":
-            parappa += ("You're" if tokens.is_sent_start else "you're") + tokens.whitespace_
-        elif tokens.text.lower() == "you're" or tokens.text.lower() == "youre":
-            parappa += "I'm" + tokens.whitespace_
-        elif tokens.text.lower() == "i":
-            parappa += ("You" if tokens.is_sent_start else "you") + tokens.whitespace_
-        elif tokens.text.lower() == "me":
-            parappa += ("You" if tokens.is_sent_start else "you") + tokens.whitespace_
-        elif tokens.text.lower() == "you" and tokens.dep_ == "nsubj":
-            parappa += "I" + tokens.whitespace_
-        elif tokens.text.lower() == "you".lower() and tokens.dep_ != "nsubj":
-            parappa += ("Me" if tokens.is_sent_start else "me") + tokens.whitespace_
-        elif tokens.text.lower() == "my":
-            parappa += ("Your" if tokens.is_sent_start else "your") + tokens.whitespace_
-        elif tokens.text.lower() == "your":
-            parappa += ("My" if tokens.is_sent_start else "my") + tokens.whitespace_
-        elif tokens.text.lower() == "mine":
-            parappa += ("Yours" if tokens.is_sent_start else "yours") + tokens.whitespace_
-        elif tokens.text.lower() == "yours":
-            parappa += ("Mine" if tokens.is_sent_start else "mine") + tokens.whitespace_
-        else:
-            parappa += tokens.text_with_ws
+        replaced = False
+        for (x, y) in tupleList:
+            if tokens.text.lower() == x.lower():
+                parappa += (y.capitalize() if tokens.is_sent_start else y) + tokens.whitespace_
+                replaced = True
+            elif tokens.text.lower() == y.lower():
+                parappa += (x.capitalize() if tokens.is_sent_start else x) + tokens.whitespace_
+                replaced = True
 
-        print("Token: " + tokens.text)    # DEBUG: Print each token for diagnosis
+            if replaced == True:
+                break
+
+        if replaced == False:
+            parappa += tokens.text_with_ws
+        # if tokens.text.lower() == "i am":
+        #     parappa += ("You are" if tokens.is_sent_start else "you are") + tokens.whitespace_
+        # elif tokens.text.lower() == "you are":
+        #     parappa += "I am" + tokens.whitespace_
+        # elif tokens.text.lower() == "i ain't" or tokens.text.lower() == "i aint":
+        #     parappa += ("You aren't" if tokens.is_sent_start else "you aren't") + tokens.whitespace_
+        # elif tokens.text.lower() == "you aren't" or tokens.text.lower() == "you arent":
+        #     parappa += "I ain't" + tokens.whitespace_
+        # elif tokens.text.lower() == "i'm" or tokens.text.lower() == "im":
+        #     parappa += ("You're" if tokens.is_sent_start else "you're") + tokens.whitespace_
+        # elif tokens.text.lower() == "you're" or tokens.text.lower() == "youre":
+        #     parappa += "I'm" + tokens.whitespace_
+        # elif tokens.text.lower() == "i":
+        #     parappa += ("You" if tokens.is_sent_start else "you") + tokens.whitespace_
+        # elif tokens.text.lower() == "me":
+        #     parappa += ("You" if tokens.is_sent_start else "you") + tokens.whitespace_
+        # elif tokens.text.lower() == "you" and tokens.dep_ == "nsubj":
+        #     parappa += "I" + tokens.whitespace_
+        # elif tokens.text.lower() == "you".lower() and tokens.dep_ != "nsubj":
+        #     parappa += ("Me" if tokens.is_sent_start else "me") + tokens.whitespace_
+        # elif tokens.text.lower() == "my":
+        #     parappa += ("Your" if tokens.is_sent_start else "your") + tokens.whitespace_
+        # elif tokens.text.lower() == "your":
+        #     parappa += ("My" if tokens.is_sent_start else "my") + tokens.whitespace_
+        # elif tokens.text.lower() == "mine":
+        #     parappa += ("Yours" if tokens.is_sent_start else "yours") + tokens.whitespace_
+        # elif tokens.text.lower() == "yours":
+        #     parappa += ("Mine" if tokens.is_sent_start else "mine") + tokens.whitespace_
+        # else:
+        #     parappa += tokens.text_with_ws
+
+        # print("Token: " + tokens.text)    # DEBUG: Print each token for diagnosis
         
     print ("Output: " + parappa) # Return parappa's message
 

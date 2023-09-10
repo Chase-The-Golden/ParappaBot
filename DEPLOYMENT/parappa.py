@@ -3,11 +3,14 @@
 # More info on SpaCy here: https://spacy.io/
 import spacy
 from spacy.matcher import Matcher
+
 # Standard SpaCy NLP & Matcher load in English model
 nlp = spacy.load("en_core_web_sm")
+
 # Matchers
 contract = Matcher(nlp.vocab)   # Matcher for contractions e.g., "aren't" and "ain't"
 matcher = Matcher(nlp.vocab)        # Matcher for pronoun-verbs
+
 # Patterns for matching & retokenizing
 ### contractions
 AintPattern = [{"LOWER" : "ai"}, {"LOWER" : {"IN" : ["n't", "nt"]}}]
@@ -20,6 +23,9 @@ WerentPattern = [{"LOWER" : "were"}, {"LOWER" : {"IN" : ["n't", "nt"]}}]
 ImPattern = [{"LOWER" : "i"}, {"LOWER" : {"IN": ["'m", "m"]}}]
 YourePattern = [{"LOWER" : "you"}, {"LOWER" : {"IN": ["'re", "re"]}}]
 IAmPattern = [{"LOWER" : "i"}, {"LOWER" : "am"}]
+YouArePattern = [{"LOWER" : "you"}, {"LOWER" : "are"}]
+IWasPattern = [{"LOWER" : "i"}, {"LOWER" : "was"}]
+YouWerePattern = [{"LOWER" : "you"}, {"LOWER" : "were"}]
 IAintPattern = [{"LOWER" : "i"}, {"LOWER" : {"REGEX" : "ain'?t"}}]
 YouArentPattern = [{"LOWER" : "you"}, {"LOWER" : {"REGEX" : "aren'?t"}}]
 
@@ -41,9 +47,12 @@ contract.add("Werent", [WerentPattern])
 
 # Adding to matcher
 ### Declarative
-matcher.add("IAm", [ImPattern])
-matcher.add("YouAre", [YourePattern])
-matcher.add("IAmToo", [IAmPattern])
+matcher.add("Im", [ImPattern])
+matcher.add("Youre", [YourePattern])
+matcher.add("IAm", [IAmPattern])
+matcher.add("YouAre", [YouArePattern])
+matcher.add("IWas", [IWasPattern])
+matcher.add("YouWere", [YouWerePattern])
 matcher.add("YouArent", [YouArentPattern])
 matcher.add("IAint", [IAintPattern])
 
@@ -57,19 +66,24 @@ matcher.add("ArentYou", [ArentYouPattern])
 matcher.add("WasntI", [WasntIPattern])
 matcher.add("WerentYou", [WerentYouPattern])
 
-# For future development; iterate through tuple list and switch with each tuple. Break on success.
-'''
+# Iterate through tuple list and switch with each tuple. Break on success.
 tupleList = [
     ("I am", "you are"),
+    ("I ain't", "you aren't"),
+    ("I aint", "you arent"),
     ("I'm", "you're"),
     ("Im", "youre"),
     ("I was", "you were"),
-    ("I", "you"),
-    ("me", "you"),
+    ("am I", "are you"),
+    ("was I", "were you"),
+    ("ain't I", "aren't you"),
+    ("aint I", "arent you"),
+    ("wasn't I", "weren't you"),
+    ("wasnt I", "werent you"),
     ("my", "your"),
     ("mine", "yours")
 ]
-'''
+
 def repeat(message):
     rap = nlp(message)  # SpaCy's NLP of user input
     parappa = ''        # Parappa's line
@@ -89,60 +103,36 @@ def repeat(message):
 
     # Add to "parappa" string depending on token
     for tokens in rap:
-        # Declarative matchers
-        if tokens.text.lower() == "i am":
-            parappa += ("You are" if tokens.is_sent_start else "you are") + tokens.whitespace_
-        elif tokens.text.lower() == "you are":
-            parappa += "I am" + tokens.whitespace_
-        elif tokens.text.lower() == "i ain't" or tokens.text.lower() == "i aint":
-            parappa += ("You aren't" if tokens.is_sent_start else "you aren't") + tokens.whitespace_
-        elif tokens.text.lower() == "you aren't" or tokens.text.lower() == "you arent":
-            parappa += "I ain't" + tokens.whitespace_
-        elif tokens.text.lower() == "i'm" or tokens.text.lower() == "im":
-            parappa += ("You're" if tokens.is_sent_start else "you're") + tokens.whitespace_
-        elif tokens.text.lower() == "you're" or tokens.text.lower() == "youre":
-            parappa += "I'm" + tokens.whitespace_
-        elif tokens.text.lower() == "i was":
-            parappa += ("You were" if tokens.is_sent_start else "you were") + tokens.whitespace_
-        elif tokens.text.lower() == "you were":
-            parappa += "I was" + tokens.whitespace_
-        # Interrogative matchers
-        elif tokens.text.lower() == "am i":
-            parappa += ("Are you" if tokens.is_sent_start else "are you") + tokens.whitespace_
-        elif tokens.text.lower() == "are you":
-            parappa += ("Am I" if tokens.is_sent_start else "am I") + tokens.whitespace_
-        elif tokens.text.lower() == "was i":
-            parappa += ("Were you" if tokens.is_sent_start else "were you") + tokens.whitespace_
-        elif tokens.text.lower() == "were you":
-            parappa += ("Was I" if tokens.is_sent_start else "was I") + tokens.whitespace_
-        elif tokens.text.lower() == "ain't i" or tokens.text.lower() == "aint i":
-            parappa += ("Aren't you" if tokens.is_sent_start else "aren't you") + tokens.whitespace_
-        elif tokens.text.lower() == "aren't you" or tokens.text.lower() == "arent you":
-            parappa += ("Ain't I" if tokens.is_sent_start else "ain't I") + tokens.whitespace_
-        elif tokens.text.lower() == "wasn't i" or tokens.text.lower() == "wasnt i":
-            parappa += ("Weren't you" if tokens.is_sent_start else "weren't you") + tokens.whitespace_
-        elif tokens.text.lower() == "weren't you" or tokens.text.lower() == "werent you":
-            parappa += ("Wasn't I" if tokens.is_sent_start else "wasn't I") + tokens.whitespace_
-        # Individual matchers
-        elif tokens.text.lower() == "i":
-            parappa += ("You" if tokens.is_sent_start else "you") + tokens.whitespace_
-        elif tokens.text.lower() == "me":
-            parappa += ("You" if tokens.is_sent_start else "you") + tokens.whitespace_
-        elif tokens.text.lower() == "you" and tokens.dep_ == "nsubj":   # You is the SUBJECT of the sentence
-            parappa += "I" + tokens.whitespace_
-        elif tokens.text.lower() == "you" and tokens.dep_ != "nsubj":   # You is NOT the SUBJECT of the sentence
-            parappa += ("Me" if tokens.is_sent_start else "me") + tokens.whitespace_
-        elif tokens.text.lower() == "my":
-            parappa += ("Your" if tokens.is_sent_start else "your") + tokens.whitespace_
-        elif tokens.text.lower() == "your":
-            parappa += ("My" if tokens.is_sent_start else "my") + tokens.whitespace_
-        elif tokens.text.lower() == "mine":
-            parappa += ("Yours" if tokens.is_sent_start else "yours") + tokens.whitespace_
-        elif tokens.text.lower() == "yours":
-            parappa += ("Mine" if tokens.is_sent_start else "mine") + tokens.whitespace_
-        else:
-            parappa += tokens.text_with_ws
+        # Looping through tuple list for compacting code
+        replaced = False    # Bool check to see if a token has been replaced
+
+        # Accessing x and y values from list of tuples to match tokens with, line 66
+        for (x, y) in tupleList:
+            if tokens.text.lower() == x.lower():
+                parappa += ((y[0].upper() + y[1:]) if tokens.is_sent_start else y) + tokens.whitespace_
+                replaced = True
+            elif tokens.text.lower() == y.lower():
+                parappa += ((x[0].upper() + x[1:]) if tokens.is_sent_start else x) + tokens.whitespace_
+                replaced = True
+
+            # break from for loop if token is "replaced" to save runtime
+            if replaced == True:
+                break
+
+        # On no replacements done, check special case
+        if replaced == False:
+            # SPECIAL CASE: Determining if you is the subject or object of the sentence
+            if tokens.text.lower() == "you" and tokens.dep_ == "nsubj":
+                parappa += "I" + tokens.whitespace_
+            elif tokens.text.lower() == "you" and tokens.dep_ != "nsubj":
+                parappa += ("Me" if tokens.is_sent_start else "me") + tokens.whitespace_
+            elif tokens.text.lower() == "i":
+                parappa += ("You" if tokens.is_sent_start else "you") + tokens.whitespace_
+            elif tokens.text.lower() == "me":
+                parappa += ("You" if tokens.is_sent_start else "you") + tokens.whitespace_
+            # NON-SPECIAL CASE: Simply add token if all else fails
+            else:
+                parappa += tokens.text_with_ws
 
     # print (parappa) # DEBUG: Print parappa's message in the terminal
-    return parappa
     return parappa
